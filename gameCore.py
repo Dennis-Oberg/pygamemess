@@ -16,11 +16,11 @@ FramePerSec = pygame.time.Clock()
  
 displaysurface = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("2D")
+font_name = pygame.font.match_font('Adobe Arabic')
+
 
 
 class Player(pygame.sprite.Sprite):
-   
-   
     def __init__(self, info):
         super().__init__()
         self.surf = pygame.Surface((30,30))
@@ -29,18 +29,14 @@ class Player(pygame.sprite.Sprite):
         self.name = info    
         self.hp = 100
         self.score = 0
+        self.name = "Dennis"
         
         
         self.pos = vec((10,385))
         self.vel = vec(0,0)
         self.acc = vec(0,0)
           
-    def getName(self):
-        return self.name
-    
-    def getScore(self):
-        return self.score
-    
+   
     def setScore(self, score):
         self.score = score
         
@@ -73,12 +69,16 @@ class Player(pygame.sprite.Sprite):
         pygame.draw.circle(surface, (0,0,0), pygame.mouse.get_pos(), 4)
         if event.type == pygame.MOUSEBUTTONDOWN:
             self.drawLine(surface)
+            self.score += 1
         
         
     def drawLine(self, surface):
         pygame.draw.line(surface, (255,0,0), (self.pos.x, self.pos.y - 15),pygame.mouse.get_pos(), 2)
         
-        
+    def checkCollision(self, obstacles):
+        obstaclePoints = []
+        for obst in obstacles:
+            obstaclePoints.append(obst.pos.x)
        
       
     def update(self):
@@ -121,6 +121,8 @@ class Obstacle(pygame.sprite.Sprite):
         self.surf = pygame.Surface((20, 20))
         self.surf.fill((255,0,0))
         self.rect = self.surf.get_rect(center = (300 - 50,250))
+        self.pos = vec((0,0))
+    
         
         
         self.vel = vec(0,0)
@@ -133,44 +135,42 @@ class Obstacle(pygame.sprite.Sprite):
         self.rect = self.surf.get_rect(center = (x, y))
         
         
-    
-
-class GameCore():
-    def __init__(self):
-        self.player = play1
-        self.score = score
-    def printInfo(self):
-        text = play1.getName  + "Score: " + score
-    
-
-
-
         
+class GameCore():
+    def __init__(self, Player, Surface):
+        self.Player = Player
+        self.Surface = Surface
+    
+    def scrolling(self):
+        pass
+    
+    
+    def draw_text(self, Surface, text, size, x, y):
+        font = pygame.font.Font(font_name, size)
+        text_surface = font.render(text, True, (0,0,0))
+        text_rect = text_surface.get_rect()
+        text_rect.midtop = (x, y)
+        Surface.blit(text_surface, text_rect)
+    
+#creating objects  
 platform = platform()
 play1 = Player("Dennis")
 
+gameCore = GameCore(play1, displaysurface)
 
 obstacles = []
 
-
-
-ob1 = Obstacle()
-ob2 = Obstacle()
-ob3 = Obstacle()
-
-obstacles.append(ob1)
-obstacles.append(ob2)
-obstacles.append(ob3)
-
-for obstacle in obstacles:
-    obstacle.setCenter(random(10,500), random(100,600))
+for i in range(10):
+    obstacles.append(Obstacle())
+    obstacles[i].setCenter(100 * random.randint(0,8), 100 * random.randint(0,5))
 
 
 all_sprites = pygame.sprite.Group()
 all_sprites.add(play1)
-all_sprites.add(ob1)
-all_sprites.add(ob2)
-all_sprites.add(ob3)
+all_sprites.add(platform)
+all_sprites.add(obstacles)
+
+
 
 
 
@@ -186,27 +186,31 @@ while True:
      
      
     displaysurface.fill((20,0,255))
-
+    
     
     for entity in all_sprites:
         displaysurface.blit(entity.surf, entity.rect)
         
+        
+    font = pygame.font.SysFont(None, 24)
+    img = font.render('hello', True, (255,255,255))
+    gameCore.draw_text(displaysurface, "Score " + str(play1.score), 40, WIDTH / 2, 10)
+        
     play1.move()
 
     play1.collision()
+    play1.checkCollision(obstacles)
     play1.createMouse(displaysurface)
     
     for obstacle in obstacles:
         obstacle.move()
-        
-
-
+       
  
     pygame.display.update()
     FramePerSec.tick(FPS)
         
         
-            
+
 
             
         
