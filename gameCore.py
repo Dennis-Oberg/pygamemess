@@ -17,7 +17,6 @@ FramePerSec = pygame.time.Clock()
 displaysurface = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("2D")
 
-font3 = pygame.font.SysFont('Bauhaus 93', 36)
 
 class Player(pygame.sprite.Sprite):
    
@@ -28,6 +27,7 @@ class Player(pygame.sprite.Sprite):
         self.surf.fill((128,255,40))
         self.rect = self.surf.get_rect(center = (10,420))
         self.name = info    
+        self.hp = 100
         
         
         self.pos = vec((10,385))
@@ -62,7 +62,15 @@ class Player(pygame.sprite.Sprite):
     
     def createMouse(self, surface):     
         pygame.mouse.set_visible(False)
-        pygame.draw.circle(surface, (0,125,255), pygame.mouse.get_pos(), 10)
+        pygame.draw.circle(surface, (0,0,0), pygame.mouse.get_pos(), 10)
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            self.drawLine(surface)
+        
+        
+    def drawLine(self, surface):
+        pygame.draw.line(surface, (255,0,0), (self.pos.x, self.pos.y),pygame.mouse.get_pos(), 4)
+        
+        
        
       
     def update(self):
@@ -74,17 +82,19 @@ class Player(pygame.sprite.Sprite):
     def collision(self):
         if self.pos.x > WIDTH:
             self.pos.x = 0
+            self.health =- 2
             
         if self.pos.x < 0:
             self.pos.x = WIDTH
+            self.health =- 2
             
         if self.pos.y < 0:
             self.vel.y = 0
-            
+            self.health =- 2
 
         if self.pos.y > HEIGHT:
             self.vel.y = HEIGHT    
-     
+            self.health =- 2
         self.rect.midbottom = self.pos
         
   
@@ -93,7 +103,7 @@ class platform(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
         self.surf = pygame.Surface((WIDTH, 20))
-        self.surf.fill((255,0,0))
+        self.surf.fill((0,0,0))
         self.rect = self.surf.get_rect(center = (WIDTH/2, HEIGHT - 10))
  
  
@@ -117,16 +127,17 @@ for i in range (10):
     obstacles.append(Obstacle())
 
 
-print(obstacles)    
+
 
 
 all_sprites = pygame.sprite.Group()
 all_sprites.add(platform)
 all_sprites.add(play1)
+all_sprites.add(obstacles)
 
 
 
-text = font3.render('Hello world', True, (0, 0, 0))
+
 
 
         
@@ -139,8 +150,9 @@ while True:
             pygame.quit()
             sys.exit
      
-    displaysurface.fill((0,0,0))
-    displaysurface.blit(text, (100,100))
+     
+    displaysurface.fill((20,0,255))
+
 
     
         
@@ -152,8 +164,8 @@ while True:
 
     play1.collision()
     play1.createMouse(displaysurface)
-    
-    
+
+
  
     pygame.display.update()
     FramePerSec.tick(FPS)
