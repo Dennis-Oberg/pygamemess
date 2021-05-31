@@ -25,9 +25,10 @@ class Player(pygame.sprite.Sprite):
         super().__init__()
         self.surf = pygame.Surface((30,30))
         self.surf.fill((128,255,40))
-        self.rect = self.surf.get_rect(center = (10,420))
+        self.rect = self.surf.get_rect(center = (WIDTH/2,HEIGHT/2))
         self.name = info    
         self.hp = 100
+        self.score = 0
         
         
         self.pos = vec((10,385))
@@ -36,6 +37,13 @@ class Player(pygame.sprite.Sprite):
           
     def getName(self):
         return self.name
+    
+    def getScore(self):
+        return self.score
+    
+    def setScore(self, score):
+        self.score = score
+        
         
     def move(self):
         self.acc = vec(0,0)
@@ -62,13 +70,13 @@ class Player(pygame.sprite.Sprite):
     
     def createMouse(self, surface):     
         pygame.mouse.set_visible(False)
-        pygame.draw.circle(surface, (0,0,0), pygame.mouse.get_pos(), 10)
+        pygame.draw.circle(surface, (0,0,0), pygame.mouse.get_pos(), 4)
         if event.type == pygame.MOUSEBUTTONDOWN:
             self.drawLine(surface)
         
         
     def drawLine(self, surface):
-        pygame.draw.line(surface, (255,0,0), (self.pos.x, self.pos.y),pygame.mouse.get_pos(), 4)
+        pygame.draw.line(surface, (255,0,0), (self.pos.x, self.pos.y - 15),pygame.mouse.get_pos(), 2)
         
         
        
@@ -110,10 +118,30 @@ class platform(pygame.sprite.Sprite):
 class Obstacle(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
-        self.surf = pygame.Surface((30, 20))
+        self.surf = pygame.Surface((20, 20))
         self.surf.fill((255,0,0))
-        self.rect = self.surf.get_rect(center = (WIDTH/2, HEIGHT - 10))
+        self.rect = self.surf.get_rect(center = (300 - 50,250))
         
+        
+        self.vel = vec(0,0)
+        self.acc = vec(0,0)
+        
+    def move(self):
+        self.acc = vec(0,0.5)
+        
+    def setCenter(self,  x, y):
+        self.rect = self.surf.get_rect(center = (x, y))
+        
+        
+    
+
+class GameCore():
+    def __init__(self):
+        self.player = play1
+        self.score = score
+    def printInfo(self):
+        text = play1.getName  + "Score: " + score
+    
 
 
 
@@ -122,21 +150,27 @@ platform = platform()
 play1 = Player("Dennis")
 
 
-obstacles = list()
-for i in range (10):
-    obstacles.append(Obstacle())
+obstacles = []
 
 
 
+ob1 = Obstacle()
+ob2 = Obstacle()
+ob3 = Obstacle()
+
+obstacles.append(ob1)
+obstacles.append(ob2)
+obstacles.append(ob3)
+
+for obstacle in obstacles:
+    obstacle.setCenter(random(10,500), random(100,600))
 
 
 all_sprites = pygame.sprite.Group()
-all_sprites.add(platform)
 all_sprites.add(play1)
-all_sprites.add(obstacles)
-
-
-
+all_sprites.add(ob1)
+all_sprites.add(ob2)
+all_sprites.add(ob3)
 
 
 
@@ -153,9 +187,6 @@ while True:
      
     displaysurface.fill((20,0,255))
 
-
-    
-        
     
     for entity in all_sprites:
         displaysurface.blit(entity.surf, entity.rect)
@@ -164,6 +195,10 @@ while True:
 
     play1.collision()
     play1.createMouse(displaysurface)
+    
+    for obstacle in obstacles:
+        obstacle.move()
+        
 
 
  
