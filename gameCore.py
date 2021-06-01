@@ -6,8 +6,8 @@ import random
 pygame.init()
 vec = pygame.math.Vector2 
  
-HEIGHT = 860
-WIDTH = 600
+HEIGHT = 800
+WIDTH = 640
 ACC = 0.85
 FRIC = -0.1
 FPS = 60
@@ -18,7 +18,12 @@ displaysurface = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("2D")
 font_name = pygame.font.match_font('Adobe Arabic')
 
-
+class Particle():
+    def __init__(self):
+        self.pos = vec(0,0)
+        
+    def setPos(self, player):
+        self.pos = vec(player.playerMouseX, player.playerMouseY)
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, info):
@@ -30,15 +35,29 @@ class Player(pygame.sprite.Sprite):
         self.hp = 100
         self.score = 0
         self.name = "Dennis"
+        self.isMoving = False
+        self.playerMouseX, playerMouseY = pygame.mouse.get_pos()
         
         
         self.pos = vec((10,385))
         self.vel = vec(0,0)
         self.acc = vec(0,0)
+        self.particles = []
           
    
     def setScore(self, score):
         self.score = score
+        
+    def createParticles(self):
+        self.particles.append([[200,200 ], [random.randint(0, 20) / 10 - 1, -2], random.randint(4, 6)])
+        for particle in self.particles:
+            particle[0][0] += particle[1][0]
+            particle[0][1] += particle[1][1]
+            particle[2] -= 0.1
+            particle[1][1] += 0.1
+            pygame.draw.circle(displaysurface, (255, 255, 255), [int(particle[0][0]), int(particle[0][1])], int(particle[2]))
+            if particle[2] <= 0:
+                self.particles.remove(particle)
         
         
     def move(self):
@@ -48,12 +67,16 @@ class Player(pygame.sprite.Sprite):
         
         if pressed_keys[K_a]:
             self.acc.x = - ACC
+            isMoving = True
         if pressed_keys[K_d]:
             self.acc.x =  ACC
+            isMoving = True
         if pressed_keys[K_w]:
             self.acc.y = - ACC
+            isMoving = True
         if pressed_keys[K_s]:
             self.acc.y = ACC
+            isMoving = True
         if pressed_keys[K_SPACE]:
             self.ACC = 0
             self.FRIC = 0
@@ -69,6 +92,7 @@ class Player(pygame.sprite.Sprite):
         pygame.draw.circle(surface, (0,0,0), pygame.mouse.get_pos(), 4)
         if event.type == pygame.MOUSEBUTTONDOWN:
             self.drawLine(surface)
+            self.createParticles()
             self.score += 1
         
         
@@ -79,13 +103,8 @@ class Player(pygame.sprite.Sprite):
         obstaclePoints = []
         for obst in obstacles:
             obstaclePoints.append(obst.pos.x)
-       
-      
-    def update(self):
-        hits = pygame.sprite.spritecollide(play1 , platform, False)
-        if hits:
-            self.pos.y = hits[0].rect.top + 1
-            self.vel.y = 0
+            
+
         
     def collision(self):
         if self.pos.x > WIDTH:
@@ -107,29 +126,25 @@ class Player(pygame.sprite.Sprite):
         
   
         
-class platform(pygame.sprite.Sprite):
-    def __init__(self):
-        super().__init__()
-        self.surf = pygame.Surface((WIDTH, 20))
-        self.surf.fill((0,0,0))
-        self.rect = self.surf.get_rect(center = (WIDTH/2, HEIGHT - 10))
+
  
  
 class Obstacle(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
         self.surf = pygame.Surface((20, 20))
-        self.surf.fill((255,0,0))
+        self.surf.fill((random.random(),0,0))
         self.rect = self.surf.get_rect(center = (300 - 50,250))
         self.pos = vec((0,0))
     
-        
-        
         self.vel = vec(0,0)
         self.acc = vec(0,0)
         
-    def move(self):
+    def move(self, player):
         self.acc = vec(0,0.5)
+        if(player.isMoving):
+            self.acc.x =-5
+            
         
     def setCenter(self,  x, y):
         self.rect = self.surf.get_rect(center = (x, y))
@@ -141,7 +156,7 @@ class GameCore():
         self.Player = Player
         self.Surface = Surface
     
-    def scrolling(self):
+    def scrolling(self, obstacles):
         pass
     
     
@@ -153,12 +168,17 @@ class GameCore():
         Surface.blit(text_surface, text_rect)
     
 #creating objects  
-platform = platform()
+
 play1 = Player("Dennis")
 
 gameCore = GameCore(play1, displaysurface)
 
+
 obstacles = []
+
+
+
+
 
 for i in range(10):
     obstacles.append(Obstacle())
@@ -167,15 +187,21 @@ for i in range(10):
 
 all_sprites = pygame.sprite.Group()
 all_sprites.add(play1)
-all_sprites.add(platform)
+
 all_sprites.add(obstacles)
+platforms = pygame.sprite.Group()
 
 
 
+    
 
 
         
 while True:
+    
+    displaysurface.fill((20,0,255))
+  
+    
     for event in pygame.event.get():
         if event.type == QUIT:
             pygame.quit()
@@ -185,7 +211,7 @@ while True:
             sys.exit
      
      
-    displaysurface.fill((20,0,255))
+    
     
     
     for entity in all_sprites:
@@ -202,8 +228,10 @@ while True:
     play1.checkCollision(obstacles)
     play1.createMouse(displaysurface)
     
+    gameCore.scrolling(obstacles)
+    
     for obstacle in obstacles:
-        obstacle.move()
+        obstacle.move(play1)
        
  
     pygame.display.update()
