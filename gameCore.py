@@ -2,6 +2,8 @@ import pygame
 from pygame.locals import *
 import sys
 import random
+
+from pypy import Gun
  
 pygame.init()
 vec = pygame.math.Vector2 
@@ -20,6 +22,7 @@ BLUE = ((0,0,255))
 YELLOW = ((255,255,0))
 PINK = ((255,0,255))
 SKYBLUE = ((0,255,255))
+colours = [BLACK, WHITE, RED, GREEN, BLUE, YELLOW, PINK, SKYBLUE]
  
 FramePerSec = pygame.time.Clock()
  
@@ -45,7 +48,7 @@ class Player(pygame.sprite.Sprite):
         self.score = 0
         self.isMoving = False
         self.playerMouseX, playerMouseY = pygame.mouse.get_pos()
-        
+        self.gunList = []
         
         self.pos = vec((10,385))
         self.vel = vec(0,0)
@@ -54,6 +57,9 @@ class Player(pygame.sprite.Sprite):
     def setScore(self, score):
         self.score = score
         
+    def declareGun(self,surface):
+        self.gun = Gun(self.pos.x, self.pos.y,surface)
+        self.gunList.append(gun)
         
     def move(self):
         self.acc = vec(0,0)
@@ -77,13 +83,12 @@ class Player(pygame.sprite.Sprite):
             self.FRIC = 0
         if not pressed_keys:
             self.isMoving = False
-           
-       
      
         self.acc.x += self.vel.x * FRIC
         self.acc.y += self.vel.y * FRIC 
         self.vel += self.acc
         self.pos += self.vel + 0.5 * self.acc
+        self.collision()
         
     
     def createMouse(self, surface):     
@@ -101,6 +106,7 @@ class Player(pygame.sprite.Sprite):
         obstaclePoints = []
         for obst in obstacles:
             obstaclePoints.append(obst.pos.x)
+           
             
 
         
@@ -130,9 +136,11 @@ class Button():
         self.width = width
         self.height = height
         self.text = text
+        self.vec = ((x,y))
+        
 
     def draw(self,win,outline=None):
-        #Call this method to draw the button on the screen
+      
         if outline:
             pygame.draw.rect(win, outline, (self.x-2,self.y-2,self.width+4,self.height+4),0)
             
@@ -144,7 +152,7 @@ class Button():
             win.blit(text, (self.x + (self.width/2 - text.get_width()/2), self.y + (self.height/2 - text.get_height()/2)))
 
     def isOver(self, pos):
-        #Pos is the mouse position or a tuple of (x,y) coordinates
+      
         if pos[0] > self.x and pos[0] < self.x + self.width:
             if pos[1] > self.y and pos[1] < self.y + self.height:
                 return True
@@ -188,8 +196,14 @@ class GameCore():
     def __init__(self, player, surface, ):
         self.player = player
         self.surface = surface
-    
-    
+        
+    def checkObstCollision(self, buttonList, player):
+        for button in buttonList:
+            if(button.vec == player.pos):
+                print("true")
+                
+    def returnRandom(self):
+        return random.randint(150, 650) 
             
     
     def draw_text(self, Surface, text, size, x, y):
@@ -221,8 +235,10 @@ platforms = pygame.sprite.Group()
 
 
 buttonList = []
-mainButton = Button(RED, WIDTH/2, HEIGHT/2, 200,50, "Welcome") 
-buttonList.append(mainButton)
+mainButton = Button(RED, 200, 400, 200,50, "")
+for randomObst in range(6):
+    buttonList.append(Button(colours[random.randint(0,7)],  random.randint(40,WIDTH),random.randint(80, HEIGHT), random.randint(20,80), random.randint(20,80))) 
+#buttonList.append(mainButton)
     
 while True:
     displaysurface.fill((0,0,0)) 
@@ -245,8 +261,9 @@ while True:
     gameCore.draw_text(displaysurface, "Score: " + str(play1.score), 40, WIDTH / 2, 10)
         
     play1.move()
+    #play1.declareGun(displaysurface)
 
-    play1.collision()
+   
     play1.checkCollision(obstacles)
     play1.createMouse(displaysurface)
     
@@ -257,6 +274,7 @@ while True:
     for button in buttonList:
         button.draw(displaysurface)
    
+    gameCore.checkObstCollision(buttonList, play1)
  
     pygame.display.update()
     FramePerSec.tick(FPS)
