@@ -7,6 +7,8 @@ from pypy import Gun
  
 pygame.init()
 vec = pygame.math.Vector2 
+mainClock = pygame.time.Clock()
+
  
 HEIGHT = 800
 WIDTH = 640
@@ -23,6 +25,9 @@ YELLOW = ((255,255,0))
 PINK = ((255,0,255))
 SKYBLUE = ((0,255,255))
 colours = [BLACK, WHITE, RED, GREEN, BLUE, YELLOW, PINK, SKYBLUE]
+
+
+font = pygame.font.SysFont(None, 20)
  
 FramePerSec = pygame.time.Clock()
  
@@ -89,6 +94,7 @@ class Player(pygame.sprite.Sprite):
         self.vel += self.acc
         self.pos += self.vel + 0.5 * self.acc
         self.collision()
+      
         
     
     def createMouse(self, surface):     
@@ -102,12 +108,12 @@ class Player(pygame.sprite.Sprite):
     def drawLine(self, surface):
         pygame.draw.line(surface, (255,255,255), (self.pos.x, self.pos.y - 15),pygame.mouse.get_pos(), 2)
         
-    def checkCollision(self, obstacles):
-        obstaclePoints = []
-        for obst in obstacles:
-            obstaclePoints.append(obst.pos.x)
-           
-            
+    def checkBoXCollision(self, boxList):
+        for boxes in boxList:
+            if(self.rect.colliderect(boxes.rect)):
+               self.hp -= 1
+         
+   
 
         
     def collision(self):
@@ -128,7 +134,7 @@ class Player(pygame.sprite.Sprite):
             self.vel.y = HEIGHT    
             self.health =- 2
         
-class Button():
+class Box():
     def __init__(self, color, x,y,width,height, text=''):
         self.color = color
         self.x = x
@@ -136,11 +142,14 @@ class Button():
         self.width = width
         self.height = height
         self.text = text
-        self.vec = ((x,y))
+        self.pos = vec(x,y)
+
+        self.rect = pygame.Rect(x,y, width, height)
+        
+   
         
 
     def draw(self,win,outline=None):
-      
         if outline:
             pygame.draw.rect(win, outline, (self.x-2,self.y-2,self.width+4,self.height+4),0)
             
@@ -160,58 +169,88 @@ class Button():
         return False
 
  
-class Obstacle(pygame.sprite.Sprite):
-    def __init__(self):
-        super().__init__()
-        self.surf = pygame.Surface((20, 20))
-        self.surf.fill((random.random(),0,0))
-        self.rect = self.surf.get_rect(center = (300 - 50,250))
-        self.pos = vec((0,0))
-        self.surf.fill((255,255,255))
-    
-        self.vel = vec(0,0)
-        self.acc = vec(0,0)
+class Game():
+    def __init__(self, width, heigth):
+        self.width = width
+        self.heigth = heigth
+        self.Main()
         
-    def move(self, player):
-        self.acc = vec(0,0.5)
-        if(player.isMoving):
-            self.acc.x =- ACC
-            
-        self.acc.x += self.vel.x * FRIC
-        self.acc.y += self.vel.y * FRIC 
-        self.vel += self.acc
-        self.pos += self.vel + 0.5 * self.acc
-    
-    def returnPos(self):
-        return self.pos
-            
-        
-    def setCenter(self,  x, y):
-        self.rect = self.surf.get_rect(center = (x, y))
-        
+    def Main(self):
+        print("Hej")
         
         
         
 class GameCore():
-    def __init__(self, player, surface, ):
+    def __init__(self, player, surface):
         self.player = player
         self.surface = surface
+        self.click = False
+        self.mx, self.my = pygame.mouse.get_pos()
         
-    def checkObstCollision(self, buttonList, player):
-        for button in buttonList:
-            if(button.vec == player.pos):
-                print("true")
+    def draw_text(self, displaySurface,text, font, color, x,y):
+        textobject = font.render(text, 1, color)
+        textrectangle = textobject.get_rect()
+        textrectangle.topleft = (x , y)
+        displaySurface.blit(self.textobject, self.textrectangle)
+        
+    
                 
     def returnRandom(self):
         return random.randint(150, 650) 
-            
     
+    def gameOver(self, player):
+        if player.hp <= 0:
+            self.options()
+            
+    def options(self):
+        while True:
+            self.surface.fill((125,200,30))
+            self.draw_text(self.surface, "Game Over", 200, WIDTH / 2, HEIGHT / 2)
+            
+            print("fis")
+            
+            button_1 = pygame.Rect(50, 100, 200, 50)
+            button_2 = pygame.Rect(50, 200, 200, 50)
+            if button_1.collidepoint((self.mx, self.my)):
+                if self.click:
+                   pass
+            if button_2.collidepoint((self.mx, self.my)):
+                if self.click:
+                    pass
+            pygame.draw.rect(self.surface, (255, 0, 0), button_1)
+            pygame.draw.rect(self.surface, (255, 0, 0), button_2)
+    
+            click = False
+            for event in pygame.event.get():
+                if event.type == QUIT:
+                    pygame.quit()
+                    sys.exit()
+                if event.type == KEYDOWN:
+                    if event.key == K_ESCAPE:
+                        pygame.quit()
+                        sys.exit()
+                if event.type == MOUSEBUTTONDOWN:
+                    if event.button == 1:
+                        click = True
+ 
+        pygame.display.update()
+        mainClock.tick(60)
+            
     def draw_text(self, Surface, text, size, x, y):
         font = pygame.font.Font(font_name, size)
         text_surface = font.render(text, True, (255,255,255))
         text_rect = text_surface.get_rect()
         text_rect.midtop = (x, y)
         Surface.blit(text_surface, text_rect)
+        
+  
+            
+    
+        
+            
+   
+        
+            
     
 #creating objects  
 
@@ -220,25 +259,24 @@ play1 = Player("Dennis")
 gameCore = GameCore(play1, displaysurface)
 
 
-obstacles = []
 
-for i in range(10):
-    obstacles.append(Obstacle())
-    obstacles[i].setCenter((i+7 ) * random.randint(10,20), 100 * random.randint(0,5))
+
+
+
 
 
 all_sprites = pygame.sprite.Group()
 all_sprites.add(play1)
 
-all_sprites.add(obstacles)
 platforms = pygame.sprite.Group()
 
 
-buttonList = []
-mainButton = Button(RED, 200, 400, 200,50, "")
+boxList = []
 for randomObst in range(6):
-    buttonList.append(Button(colours[random.randint(0,7)],  random.randint(40,WIDTH),random.randint(80, HEIGHT), random.randint(20,80), random.randint(20,80))) 
-#buttonList.append(mainButton)
+    boxList.append(Box(colours[random.randint(0,7)],  random.randint(40,WIDTH),random.randint(80, HEIGHT), random.randint(20,80), random.randint(20,80))) 
+
+if __name__ == "__main__":
+    Game(WIDTH, HEIGHT)
     
 while True:
     displaysurface.fill((0,0,0)) 
@@ -250,6 +288,9 @@ while True:
         if event.type == pygame.K_ESCAPE:
             pygame.quit()
             sys.exit
+            
+    for button in boxList:
+        button.draw(displaysurface)
      
     for entity in all_sprites:
         displaysurface.blit(entity.surf, entity.rect)
@@ -259,23 +300,15 @@ while True:
     img = font.render('hello', True, (255,255,255))
     gameCore.draw_text(displaysurface, "User: " + gameCore.player.name,20, 40, 40)
     gameCore.draw_text(displaysurface, "Score: " + str(play1.score), 40, WIDTH / 2, 10)
+    gameCore.gameOver(play1)
         
     play1.move()
-    #play1.declareGun(displaysurface)
+    
 
    
-    play1.checkCollision(obstacles)
     play1.createMouse(displaysurface)
-    
-    for obstacle in obstacles:
-        obstacle.move(play1)
-    
+    play1.checkBoXCollision(boxList)
   
-    for button in buttonList:
-        button.draw(displaysurface)
-   
-    gameCore.checkObstCollision(buttonList, play1)
- 
     pygame.display.update()
     FramePerSec.tick(FPS)
         
@@ -283,5 +316,4 @@ while True:
 
     
 
-            
-        
+
