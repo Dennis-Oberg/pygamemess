@@ -178,6 +178,12 @@ class Game():
     def Main(self):
         print("Hej")
         
+    def gameState(self, displaySurface):
+        pass
+
+    def optionState(self, displaySurface):
+        pass
+        
         
         
 class GameCore():
@@ -186,6 +192,7 @@ class GameCore():
         self.surface = surface
         self.click = False
         self.mx, self.my = pygame.mouse.get_pos()
+      
         
     def draw_text(self, displaySurface,text, font, color, x,y):
         textobject = font.render(text, 1, color)
@@ -200,14 +207,14 @@ class GameCore():
     
     def gameOver(self, player):
         if player.hp <= 0:
-            self.options()
+            self.main_menu()
             
-    def options(self):
+    def main_menu(self):
         while True:
             self.surface.fill((125,200,30))
             self.draw_text(self.surface, "Game Over", 200, WIDTH / 2, HEIGHT / 2)
             
-            print("fis")
+            
             
             button_1 = pygame.Rect(50, 100, 200, 50)
             button_2 = pygame.Rect(50, 200, 200, 50)
@@ -243,14 +250,7 @@ class GameCore():
         text_rect.midtop = (x, y)
         Surface.blit(text_surface, text_rect)
         
-  
-            
-    
-        
-            
-   
-        
-            
+      
     
 #creating objects  
 
@@ -298,8 +298,10 @@ while True:
         
     font = pygame.font.SysFont(None, 24)
     img = font.render('hello', True, (255,255,255))
-    gameCore.draw_text(displaysurface, "User: " + gameCore.player.name,20, 40, 40)
+    gameCore.draw_text(displaysurface, "User: " + gameCore.player.name,30, HEIGHT - 50, 10)
     gameCore.draw_text(displaysurface, "Score: " + str(play1.score), 40, WIDTH / 2, 10)
+    gameCore.draw_text(displaysurface, "HP: " + str(play1.hp), 40, WIDTH -50, 10)
+
     gameCore.gameOver(play1)
         
     play1.move()
