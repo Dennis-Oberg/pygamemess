@@ -9,6 +9,9 @@ pygame.init()
 vec = pygame.math.Vector2 
 mainClock = pygame.time.Clock()
 
+lead_x = 300
+lead_y = 300
+
  
 HEIGHT = 800
 WIDTH = 640
@@ -97,24 +100,30 @@ class Player(pygame.sprite.Sprite):
       
         
     
-    def createMouse(self, surface):     
+    def createMouse(self, surface, boxList):     
         pygame.mouse.set_visible(False)
         pygame.draw.circle(surface, (255,255,255), pygame.mouse.get_pos(), 4)
-        if event.type == pygame.MOUSEBUTTONDOWN:
+        if event.type == pygame.MOUSEBUTTONDOWN and self.isAiming(boxList):
             self.drawLine(surface)
             self.score += 1
         
         
-    def drawLine(self, surface):
-        pygame.draw.line(surface, (255,255,255), (self.pos.x, self.pos.y - 15),pygame.mouse.get_pos(), 2)
-        
+        #LÖS SENARE  boxes.rect.center funkar ej 
+    def isAiming(self, boxList):
+        for boxes in boxList:
+            if (pygame.mouse.get_pos() == boxes.rect.center):
+                return True
+    
+    def drawLine(self, surface, boxList):
+            pygame.draw.line(surface, colours[random.randint(0, 7)], (self.pos.x, self.pos.y - 15),pygame.mouse.get_pos(), random.randint(2,4))
+            
     def checkBoXCollision(self, boxList):
         for boxes in boxList:
             if(self.rect.colliderect(boxes.rect)):
-               self.hp -= 1
-         
-   
-
+               #self.hp -= 1
+               return True
+               
+    
         
     def collision(self):
         self.rect.midbottom = self.pos
@@ -134,8 +143,9 @@ class Player(pygame.sprite.Sprite):
             self.vel.y = HEIGHT    
             self.health =- 2
         
-class Box():
+class Box(pygame.sprite.Sprite):
     def __init__(self, color, x,y,width,height, text=''):
+        super().__init__()
         self.color = color
         self.x = x
         self.y = y
@@ -143,11 +153,35 @@ class Box():
         self.height = height
         self.text = text
         self.pos = vec(x,y)
+        self.speed = 6
+        self.min_dist = 200
+        self.lead_x_change = 0
+        self.lead_y_change = 0
+        self.lead_x = 10
+        self.lead_y = 10
 
         self.rect = pygame.Rect(x,y, width, height)
         
    
-        
+    def boxFollowPlayer(self, player, boxList):
+        if player.checkBoXCollision(boxList):
+            player.hp +=1
+        else:
+            self.lead_x += self.lead_x_change
+            self.lead_y += self.lead_y_change
+
+            delta_x = player.pos.x - self.pos.x
+            delta_y = player.pos.y - self.pos.y
+
+            if abs(delta_x) <= self.min_dist and abs(delta_y) <= self.min_dist:
+                enemy_move_x = abs(delta_x) > abs(delta_y)
+                if abs(delta_x) > self.speed and abs(delta_x) > self.speed:
+                    enemy_move_x = random.random() < 0.5
+                if enemy_move_x:
+                    self.x += min(delta_x, self.speed) if delta_x > 0 else max(delta_x, -self.speed)
+                else:
+                    self.y += min(delta_y, self.speed) if delta_y > 0 else max(delta_y, -self.speed)
+            
 
     def draw(self,win,outline=None):
         if outline:
@@ -169,21 +203,7 @@ class Box():
         return False
 
  
-class Game():
-    def __init__(self, width, heigth):
-        self.width = width
-        self.heigth = heigth
-        self.Main()
-        
-    def Main(self):
-        print("Hej")
-        
-    def gameState(self, displaySurface):
-        pass
 
-    def optionState(self, displaySurface):
-        pass
-        
         
         
 class GameCore():
@@ -192,6 +212,7 @@ class GameCore():
         self.surface = surface
         self.click = False
         self.mx, self.my = pygame.mouse.get_pos()
+        
       
         
     def draw_text(self, displaySurface,text, font, color, x,y):
@@ -207,9 +228,11 @@ class GameCore():
     
     def gameOver(self, player):
         if player.hp <= 0:
-            self.main_menu()
+            self.main_menu(self.surface)
+    
             
-    def main_menu(self):
+    def main_menu(self, displaySurface):
+        
         while True:
             self.surface.fill((125,200,30))
             self.draw_text(self.surface, "Game Over", 200, WIDTH / 2, HEIGHT / 2)
@@ -260,11 +283,6 @@ gameCore = GameCore(play1, displaysurface)
 
 
 
-
-
-
-
-
 all_sprites = pygame.sprite.Group()
 all_sprites.add(play1)
 
@@ -274,13 +292,12 @@ platforms = pygame.sprite.Group()
 boxList = []
 for randomObst in range(6):
     boxList.append(Box(colours[random.randint(0,7)],  random.randint(40,WIDTH),random.randint(80, HEIGHT), random.randint(20,80), random.randint(20,80))) 
+    platforms.add(boxList)
 
-if __name__ == "__main__":
-    Game(WIDTH, HEIGHT)
-    
+
 while True:
-    displaysurface.fill((0,0,0)) 
-      
+    displaysurface.fill(PINK) 
+    
     for event in pygame.event.get():
         if event.type == QUIT:
             pygame.quit()
@@ -289,32 +306,32 @@ while True:
             pygame.quit()
             sys.exit
             
-    for button in boxList:
-        button.draw(displaysurface)
-     
+    for boxes in boxList:
+        boxes.draw(displaysurface)
+        boxes.boxFollowPlayer(play1, boxList)
+        
     for entity in all_sprites:
         displaysurface.blit(entity.surf, entity.rect)
+        
+    #for boxes in platforms:
+     #   displaysurface.blit(boxes.surf, boxes.rect)
         
         
     font = pygame.font.SysFont(None, 24)
     img = font.render('hello', True, (255,255,255))
-    gameCore.draw_text(displaysurface, "User: " + gameCore.player.name,30, HEIGHT - 50, 10)
-    gameCore.draw_text(displaysurface, "Score: " + str(play1.score), 40, WIDTH / 2, 10)
-    gameCore.draw_text(displaysurface, "HP: " + str(play1.hp), 40, WIDTH -50, 10)
+    gameCore.draw_text(displaysurface, "User: " + gameCore.player.name,30, 80, 10)
+    gameCore.draw_text(displaysurface, "Score: " + str(gameCore.player.score), 40, WIDTH / 2, 10)
+    gameCore.draw_text(displaysurface, "HP: " + str(gameCore.player.hp), 40, WIDTH -55, 10)
 
     gameCore.gameOver(play1)
         
     play1.move()
-    
-
-   
-    play1.createMouse(displaysurface)
-    play1.checkBoXCollision(boxList)
-  
+    play1.createMouse(displaysurface, boxList)
+    #play1.checkBoXCollision(boxList)
     pygame.display.update()
     FramePerSec.tick(FPS)
         
-        
+            
 
     
 
