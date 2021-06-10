@@ -15,19 +15,19 @@ lead_y = 300
  
 HEIGHT = 800
 WIDTH = 640
-ACC = 0.85
-FRIC = -0.2
+ACC = 0.95
+FRIC = -0.15
 FPS = 60
 
 BLACK = ((0,0,0))
 WHITE =((255,255,255))
 RED = ((255,0,0))
 GREEN = ((0,255,0))
-BLUE = ((0,0,255))
+BLUE = ((0,0,255, 125))
 YELLOW = ((255,255,0))
 PINK = ((255,0,255))
 SKYBLUE = ((0,255,255))
-colours = [BLACK, WHITE, RED, GREEN, BLUE, YELLOW, PINK, SKYBLUE]
+boxColours = [BLACK, WHITE, RED, GREEN,  YELLOW, PINK, SKYBLUE]
 
 
 font = pygame.font.SysFont(None, 20)
@@ -111,16 +111,18 @@ class Player(pygame.sprite.Sprite):
         #LÖS SENARE  boxes.rect.center funkar ej 
     def isAiming(self, boxList):
         for boxes in boxList:
-            if (pygame.mouse.get_pos() == boxes.rect.center):
+            if (boxes.rect.collidepoint(pygame.mouse.get_pos())):
+                
                 return True
     
-    def drawLine(self, surface, boxList):
-            pygame.draw.line(surface, colours[random.randint(0, 7)], (self.pos.x, self.pos.y - 15),pygame.mouse.get_pos(), random.randint(2,4))
+    def drawLine(self, surface):
+            pygame.draw.line(surface, boxColours[random.randint(0, 6)], (self.pos.x, self.pos.y - 15),pygame.mouse.get_pos(), random.randint(2,4))
             
     def checkBoXCollision(self, boxList):
         for boxes in boxList:
             if(self.rect.colliderect(boxes.rect)):
-               #self.hp -= 1
+               self.hp -= 1
+               
                return True
                
     
@@ -136,16 +138,18 @@ class Player(pygame.sprite.Sprite):
             self.health =- 2
             
         if self.pos.y < 0:
-            self.vel.y = 0
+            self.pos.y = HEIGHT
             self.health =- 2
 
         if self.pos.y > HEIGHT:
-            self.vel.y = HEIGHT    
+            self.pos.y = 0    
             self.health =- 2
         
 class Box(pygame.sprite.Sprite):
     def __init__(self, color, x,y,width,height, text=''):
         super().__init__()
+        self.surf = pygame.Surface((random.randint(15, 60),random.randint(10, 80)))
+        self.surf.fill(boxColours[random.randint(0,6)])
         self.color = color
         self.x = x
         self.y = y
@@ -181,26 +185,14 @@ class Box(pygame.sprite.Sprite):
                     self.x += min(delta_x, self.speed) if delta_x > 0 else max(delta_x, -self.speed)
                 else:
                     self.y += min(delta_y, self.speed) if delta_y > 0 else max(delta_y, -self.speed)
-            
+    
+    def boxBehaviour(self, player):
+        if(self.rect.colliderect(player.rect)):
+           #self.rect.update((30, 30), (200,200))
+            pass
+   
 
-    def draw(self,win,outline=None):
-        if outline:
-            pygame.draw.rect(win, outline, (self.x-2,self.y-2,self.width+4,self.height+4),0)
-            
-        pygame.draw.rect(win, self.color, (self.x,self.y,self.width,self.height),0)
-        
-        if self.text != '':
-            font = pygame.font.SysFont('comicsans', 60)
-            text = font.render(self.text, 1, (0,0,0))
-            win.blit(text, (self.x + (self.width/2 - text.get_width()/2), self.y + (self.height/2 - text.get_height()/2)))
-
-    def isOver(self, pos):
-      
-        if pos[0] > self.x and pos[0] < self.x + self.width:
-            if pos[1] > self.y and pos[1] < self.y + self.height:
-                return True
-            
-        return False
+    
 
  
 
@@ -212,6 +204,7 @@ class GameCore():
         self.surface = surface
         self.click = False
         self.mx, self.my = pygame.mouse.get_pos()
+        self.move_speed = 5
         
       
         
@@ -221,8 +214,18 @@ class GameCore():
         textrectangle.topleft = (x , y)
         displaySurface.blit(self.textobject, self.textrectangle)
         
-    
+    def defineGrid(self):
+        blockSize = 80 #Set the size of the grid block
+        for x in range(0, WIDTH, blockSize):
+            for y in range(0, HEIGHT, blockSize):
+                rect = pygame.Rect(x, y, blockSize, blockSize)
+                pygame.draw.rect(self.surface, Color(63, 63, 63, 0), rect, 1)
+                self.updateGrid(rect)
                 
+    
+    def updateGrid(self, rect):
+        rect.y += self.move_speed
+    
     def returnRandom(self):
         return random.randint(150, 650) 
     
@@ -265,6 +268,9 @@ class GameCore():
  
         pygame.display.update()
         mainClock.tick(60)
+        
+    def warning(self, displaSurface):
+        pass
             
     def draw_text(self, Surface, text, size, x, y):
         font = pygame.font.Font(font_name, size)
@@ -291,12 +297,13 @@ platforms = pygame.sprite.Group()
 
 boxList = []
 for randomObst in range(6):
-    boxList.append(Box(colours[random.randint(0,7)],  random.randint(40,WIDTH),random.randint(80, HEIGHT), random.randint(20,80), random.randint(20,80))) 
+    boxList.append(Box(boxColours[random.randint(0,6)],  random.randint(40,WIDTH),random.randint(80, HEIGHT), random.randint(20,80), random.randint(20,80))) 
     platforms.add(boxList)
 
 
 while True:
-    displaysurface.fill(PINK) 
+    displaysurface.fill(BLUE) 
+    gameCore.defineGrid()
     
     for event in pygame.event.get():
         if event.type == QUIT:
@@ -306,15 +313,15 @@ while True:
             pygame.quit()
             sys.exit
             
-    for boxes in boxList:
-        boxes.draw(displaysurface)
-        boxes.boxFollowPlayer(play1, boxList)
+   
         
     for entity in all_sprites:
         displaysurface.blit(entity.surf, entity.rect)
         
-    #for boxes in platforms:
-     #   displaysurface.blit(boxes.surf, boxes.rect)
+    for boxes in platforms:
+        displaysurface.blit(boxes.surf, boxes.rect)
+        boxes.boxFollowPlayer(play1, boxList)
+        boxes.boxBehaviour(play1)
         
         
     font = pygame.font.SysFont(None, 24)
@@ -323,11 +330,13 @@ while True:
     gameCore.draw_text(displaysurface, "Score: " + str(gameCore.player.score), 40, WIDTH / 2, 10)
     gameCore.draw_text(displaysurface, "HP: " + str(gameCore.player.hp), 40, WIDTH -55, 10)
 
-    gameCore.gameOver(play1)
+   #gameCore.gameOver(play1)
+    play1.isAiming(boxList)
         
     play1.move()
+    play1.checkBoXCollision(boxList)
     play1.createMouse(displaysurface, boxList)
-    #play1.checkBoXCollision(boxList)
+
     pygame.display.update()
     FramePerSec.tick(FPS)
         
