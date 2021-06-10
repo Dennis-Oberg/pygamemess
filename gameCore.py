@@ -27,7 +27,7 @@ BLUE = ((0,0,255, 125))
 YELLOW = ((255,255,0))
 PINK = ((255,0,255))
 SKYBLUE = ((0,255,255))
-boxColours = [BLACK, WHITE, RED, GREEN,  YELLOW, PINK, SKYBLUE]
+boxColours = [ WHITE, RED, GREEN,  YELLOW, PINK, SKYBLUE]
 
 
 font = pygame.font.SysFont(None, 20)
@@ -55,9 +55,7 @@ class Player(pygame.sprite.Sprite):
         self.hp = 100
         self.score = 0
         self.isMoving = False
-        self.playerMouseX, playerMouseY = pygame.mouse.get_pos()
-        self.gunList = []
-        
+        self.gunList = [] 
         self.pos = vec((10,385))
         self.vel = vec(0,0)
         self.acc = vec(0,0)
@@ -102,21 +100,19 @@ class Player(pygame.sprite.Sprite):
     
     def createMouse(self, surface, boxList):     
         pygame.mouse.set_visible(False)
-        pygame.draw.circle(surface, (255,255,255), pygame.mouse.get_pos(), 4)
+        pygame.draw.circle(surface, (0,0,0,0), pygame.mouse.get_pos(), 4)
         if event.type == pygame.MOUSEBUTTONDOWN and self.isAiming(boxList):
             self.drawLine(surface)
             self.score += 1
         
         
-        #LÖS SENARE  boxes.rect.center funkar ej 
     def isAiming(self, boxList):
         for boxes in boxList:
-            if (boxes.rect.collidepoint(pygame.mouse.get_pos())):
-                
+            if (boxes.rect.collidepoint(pygame.mouse.get_pos())):  
                 return True
     
     def drawLine(self, surface):
-            pygame.draw.line(surface, boxColours[random.randint(0, 6)], (self.pos.x, self.pos.y - 15),pygame.mouse.get_pos(), random.randint(2,4))
+            pygame.draw.line(surface, boxColours[random.randint(0, 5)], (self.pos.x, self.pos.y - 15),pygame.mouse.get_pos(), random.randint(2,4))
             
     def checkBoXCollision(self, boxList):
         for boxes in boxList:
@@ -148,14 +144,10 @@ class Player(pygame.sprite.Sprite):
 class Box(pygame.sprite.Sprite):
     def __init__(self, color, x,y,width,height, text=''):
         super().__init__()
-        self.surf = pygame.Surface((random.randint(15, 60),random.randint(10, 80)))
-        self.surf.fill(boxColours[random.randint(0,6)])
+        self.surf = pygame.Surface((random.randint(10, 100),random.randint(10, 100)))
+        self.surf.fill(boxColours[random.randint(0,5)])
         self.color = color
-        self.x = x
-        self.y = y
-        self.width = width
-        self.height = height
-        self.text = text
+        
         self.pos = vec(x,y)
         self.speed = 6
         self.min_dist = 200
@@ -163,33 +155,43 @@ class Box(pygame.sprite.Sprite):
         self.lead_y_change = 0
         self.lead_x = 10
         self.lead_y = 10
+        self.vel = vec(0,0)
+        self.acc = vec(0,0)
 
         self.rect = pygame.Rect(x,y, width, height)
-        
+    
+    
+    def update(self):
+        pygame.sprite.Sprite.update(self)
    
     def boxFollowPlayer(self, player, boxList):
         if player.checkBoXCollision(boxList):
             player.hp +=1
+            
         else:
             self.lead_x += self.lead_x_change
             self.lead_y += self.lead_y_change
 
+
             delta_x = player.pos.x - self.pos.x
             delta_y = player.pos.y - self.pos.y
+            
+          
 
             if abs(delta_x) <= self.min_dist and abs(delta_y) <= self.min_dist:
                 enemy_move_x = abs(delta_x) > abs(delta_y)
                 if abs(delta_x) > self.speed and abs(delta_x) > self.speed:
                     enemy_move_x = random.random() < 0.5
                 if enemy_move_x:
-                    self.x += min(delta_x, self.speed) if delta_x > 0 else max(delta_x, -self.speed)
+                    self.pos.x += min(delta_x, self.speed) if delta_x > 0 else max(delta_x, -self.speed)
                 else:
-                    self.y += min(delta_y, self.speed) if delta_y > 0 else max(delta_y, -self.speed)
-    
+                    self.pos.y += min(delta_y, self.speed) if delta_y > 0 else max(delta_y, -self.speed)
+
+    #de ska öka i storlek om man rör dem samt du ska förlora hp
     def boxBehaviour(self, player):
         if(self.rect.colliderect(player.rect)):
            #self.rect.update((30, 30), (200,200))
-            pass
+           pass
    
 
     
@@ -289,15 +291,15 @@ gameCore = GameCore(play1, displaysurface)
 
 
 
-all_sprites = pygame.sprite.Group()
-all_sprites.add(play1)
+playerSprite = pygame.sprite.Group()
+playerSprite.add(play1)
 
 platforms = pygame.sprite.Group()
 
 
 boxList = []
-for randomObst in range(6):
-    boxList.append(Box(boxColours[random.randint(0,6)],  random.randint(40,WIDTH),random.randint(80, HEIGHT), random.randint(20,80), random.randint(20,80))) 
+for randomObst in range(16):
+    boxList.append(Box(boxColours[random.randint(0,5)],  random.randint(0,WIDTH),random.randint(50, 100), random.randint(20,80), random.randint(20,80))) 
     platforms.add(boxList)
 
 
@@ -315,8 +317,8 @@ while True:
             
    
         
-    for entity in all_sprites:
-        displaysurface.blit(entity.surf, entity.rect)
+    for player in playerSprite:
+        displaysurface.blit(player.surf, player.rect)
         
     for boxes in platforms:
         displaysurface.blit(boxes.surf, boxes.rect)
